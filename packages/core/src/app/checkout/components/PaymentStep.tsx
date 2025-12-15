@@ -1,27 +1,16 @@
 import type { Cart, Consignment } from '@bigcommerce/checkout-sdk/essential';
-import React, { lazy ,type  ReactElement } from 'react';
+import React, { useEffect,useState,type  ReactElement } from 'react';
 
 import type { ErrorLogger } from '@bigcommerce/checkout/error-handling-utils';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { ChecklistSkeleton, LazyContainer } from '@bigcommerce/checkout/ui';
 
-import { retry } from '../../common/utility';
-import { isEmbedded } from '../../embeddedCheckout';
 import { type PaymentProps } from '../../payment';
-import { isUsingMultiShipping } from '../../shipping';
 import CheckoutStep from '../CheckoutStep';
 import type CheckoutStepStatus from '../CheckoutStepStatus';
 import type CheckoutStepType from '../CheckoutStepType';
+import { useCheckout } from '@bigcommerce/checkout/contexts';
 
-const Payment = lazy(() =>
-    retry(
-        () =>
-            import(
-                /* webpackChunkName: "payment" */
-                '../../payment/Payment'
-            ),
-    ),
-);
 
 export interface PaymentStepProps extends PaymentProps {
     step: CheckoutStepStatus;
@@ -34,28 +23,61 @@ export interface PaymentStepProps extends PaymentProps {
 
 const PaymentStep = ({
     step,
-    cart,
-    consignments,
-    errorLogger,
     onEdit,
     onExpanded,
-    checkEmbeddedSupport,
-    onCartChangedError,
-    onFinalize,
-    onReady,
-    onSubmit,
-    onSubmitError,
-    onUnhandledError,
-}: PaymentStepProps): ReactElement => (
-    <CheckoutStep
+}: PaymentStepProps): ReactElement => {
+    const [evoSessionId, setEvoSessionId] = useState(null);
+    const [evoResultIndicator, setEvoResultIndicator] = useState<string | null>(null);
+    const checkout = useCheckout();
+
+    useEffect(() => {
+
+        const checkoutData = checkout.checkoutState.data.getCheckout();
+
+        if (checkoutData) {
+
+            const params = `checkout_id=${checkoutData.id}&cart_total=${checkoutData.grandTotal}`;
+
+            fetch(`https://payment.s4optik.mx/evo/create-session.php?${params}`)
+                .then((response) => response.json())
+                .then((response) => {
+                    console.log('response: ');
+                    console.log(response);
+
+                    if (response.result && response.result == 'SUCCESS') {
+                        setEvoSessionId(response.session.id);
+                    } else {
+                        console.log('Something is wrong while creating payment session!');
+                    }
+                });
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const resultIndicator = params.get("resultIndicator");
+        setEvoResultIndicator(resultIndicator);
+        
+    }, []);
+
+    const openEvoPaymentPage = () => {
+        if (!evoSessionId) {
+            console.log('No session');
+            return;
+        }
+        window.location.href = 'https://evopaymentsmexico.gateway.mastercard.com/checkout/pay/'+evoSessionId+'?checkoutVersion=1.0.0'
+    }
+    return <CheckoutStep
         {...step}
         heading={<TranslatedString id="payment.payment_heading" />}
         key={step.type}
         onEdit={onEdit}
         onExpanded={onExpanded}
     >
+        {/* <h2>This is payment step</h2> */}
         <LazyContainer loadingSkeleton={<ChecklistSkeleton />}>
-            <Payment
+            <div><input style={{ marginTop: '20px' }} type="button" value="Pay with EVO" onClick={openEvoPaymentPage} /></div>
+
+            {evoResultIndicator && <p style={{ marginTop: '5px'}}>Payment Result: {evoResultIndicator}</p>}
+            {/* <Payment
                 checkEmbeddedSupport={checkEmbeddedSupport}
                 errorLogger={errorLogger}
                 isEmbedded={isEmbedded()}
@@ -68,10 +90,11 @@ const PaymentStep = ({
                 onSubmit={onSubmit}
                 onSubmitError={onSubmitError}
                 onUnhandledError={onUnhandledError}
-            />
+            /> */}
+            {/* <h2>This is lazy payment</h2> */}
         </LazyContainer>
     </CheckoutStep>
-);
+}
 
 export default PaymentStep;
 

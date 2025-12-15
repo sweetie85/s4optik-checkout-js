@@ -514,7 +514,7 @@ const Payment= (props: PaymentProps & WithCheckoutPaymentProps & WithLanguagePro
     const uniqueSelectedMethodId =
         selectedMethod && getUniquePaymentMethodId(selectedMethod.id, selectedMethod.gateway);
 
-    return (
+    return (<>
         <PaymentContext.Provider value={getContextValue()}>
             <ChecklistSkeleton isLoading={!state.isReady}>
                 {!isEmpty(props.methods) && props.defaultMethod && (
@@ -549,6 +549,7 @@ const Payment= (props: PaymentProps & WithCheckoutPaymentProps & WithLanguagePro
             {renderOrderErrorModal()}
             {renderEmbeddedSupportErrorModal()}
         </PaymentContext.Provider>
+        </>
     );
 }
 
