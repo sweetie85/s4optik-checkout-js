@@ -32,11 +32,12 @@ const PaymentStep = ({
 
     useEffect(() => {
 
+        const timestampInMilliseconds = Date.now();
         const checkoutData = checkout.checkoutState.data.getCheckout();
 
         if (checkoutData) {
 
-            const params = `checkout_id=${checkoutData.id}&cart_total=${checkoutData.grandTotal}`;
+            const params = `checkout_id=${checkoutData.id}&cart_total=${checkoutData.grandTotal}&time=${timestampInMilliseconds}`;
 
             fetch(`https://payment.s4optik.mx/evo/create-session.php?${params}`)
                 .then((response) => response.json())
@@ -52,9 +53,57 @@ const PaymentStep = ({
                 });
         }
 
-        const params = new URLSearchParams(window.location.search);
-        const resultIndicator = params.get("resultIndicator");
+        const urlParams = new URLSearchParams(window.location.search);
+        const resultIndicator = urlParams.get("resultIndicator");
+        // const sessionVersion = params.get("sessionVersion");
         setEvoResultIndicator(resultIndicator);
+
+        if (resultIndicator && checkoutData) {
+            // checkout.checkoutService.loadOrder(checkoutData.id);
+            // checkout.checkoutService.finalizeOrderIfNeeded();
+            try {
+
+                const params = `checkout_id=${checkoutData.id}&cart_total=${checkoutData.grandTotal}&time=${timestampInMilliseconds}`;
+
+                // Verify payment and create order
+                fetch(`https://payment.s4optik.mx/evo/verify_payment_and_create_bc_order.php?${params}`)
+                .then((response) => response.json())
+                .then((response) => {
+                    console.log('response: ');
+                    console.log(response);
+
+                    checkout.checkoutService.finalizeOrderIfNeeded().then(() => {
+                        window.location.assign('/order-confirmation');
+                    });
+                });
+            } catch (error) {
+                console.log('finalizeOrderIfNeeded error: ');
+                console.log(error);
+
+                // if (error.type !== 'order_finalization_not_required') {
+                //     throw error;
+                // }
+            }
+        }   
+
+        // const paymentData = {
+        //     ccExpiry: {
+        //         month: '1',
+        //         year: '29'
+        //     },
+        //     ccName: 'Lalmani Dewangan',
+        //     ccNumber: '512345xxxxxx0008'
+        // } as CreditCardInstrument;
+
+        // const orderPayemntBody = {
+        //     methodId: 'custom',
+        //     gatewayId: 'evo',
+        //     paymentData: paymentData
+        // } as OrderPaymentRequestBody;
+
+        // checkout.checkoutService.submitOrder({ payment: orderPayemntBody });
+
+
         
     }, []);
 
