@@ -27,14 +27,13 @@ const PaymentStep = ({
     onExpanded,
 }: PaymentStepProps): ReactElement => {
     const [evoSessionId, setEvoSessionId] = useState(null);
-    const [evoResultIndicator, setEvoResultIndicator] = useState<string | null>(null);
     const checkout = useCheckout();
 
     useEffect(() => {
 
         const timestampInMilliseconds = Date.now();
         const checkoutData = checkout.checkoutState.data.getCheckout();
-
+        
         if (checkoutData) {
 
             const params = `checkout_id=${checkoutData.id}&cart_total=${checkoutData.grandTotal}&time=${timestampInMilliseconds}`;
@@ -51,59 +50,7 @@ const PaymentStep = ({
                         console.log('Something is wrong while creating payment session!');
                     }
                 });
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const resultIndicator = urlParams.get("resultIndicator");
-        // const sessionVersion = params.get("sessionVersion");
-        setEvoResultIndicator(resultIndicator);
-
-        if (resultIndicator && checkoutData) {
-            // checkout.checkoutService.loadOrder(checkoutData.id);
-            // checkout.checkoutService.finalizeOrderIfNeeded();
-            try {
-
-                const params = `checkout_id=${checkoutData.id}&cart_total=${checkoutData.grandTotal}&time=${timestampInMilliseconds}`;
-
-                // Verify payment and create order
-                fetch(`https://payment.s4optik.mx/evo/verify_payment_and_create_bc_order.php?${params}`)
-                .then((response) => response.json())
-                .then((response) => {
-                    console.log('response: ');
-                    console.log(response);
-
-                    checkout.checkoutService.finalizeOrderIfNeeded().then(() => {
-                        window.location.assign('/order-confirmation');
-                    });
-                });
-            } catch (error) {
-                console.log('finalizeOrderIfNeeded error: ');
-                console.log(error);
-
-                // if (error.type !== 'order_finalization_not_required') {
-                //     throw error;
-                // }
-            }
         }   
-
-        // const paymentData = {
-        //     ccExpiry: {
-        //         month: '1',
-        //         year: '29'
-        //     },
-        //     ccName: 'Lalmani Dewangan',
-        //     ccNumber: '512345xxxxxx0008'
-        // } as CreditCardInstrument;
-
-        // const orderPayemntBody = {
-        //     methodId: 'custom',
-        //     gatewayId: 'evo',
-        //     paymentData: paymentData
-        // } as OrderPaymentRequestBody;
-
-        // checkout.checkoutService.submitOrder({ payment: orderPayemntBody });
-
-
         
     }, []);
 
@@ -124,8 +71,6 @@ const PaymentStep = ({
         {/* <h2>This is payment step</h2> */}
         <LazyContainer loadingSkeleton={<ChecklistSkeleton />}>
             <div><input style={{ marginTop: '20px' }} type="button" value="Pay with EVO" onClick={openEvoPaymentPage} /></div>
-
-            {evoResultIndicator && <p style={{ marginTop: '5px'}}>Payment Result: {evoResultIndicator}</p>}
             {/* <Payment
                 checkEmbeddedSupport={checkEmbeddedSupport}
                 errorLogger={errorLogger}

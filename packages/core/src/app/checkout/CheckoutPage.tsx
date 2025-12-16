@@ -49,6 +49,7 @@ import type CheckoutSupport from './CheckoutSupport';
 import { BillingStep, CartSummary, CheckoutHeader, CustomerStep, PaymentStep, ShippingStep } from './components';
 import { mapCheckoutComponentErrorMessage } from './mapErrorMessage';
 import mapToCheckoutProps from './mapToCheckoutProps';
+import { useCheckout } from '@bigcommerce/checkout/contexts';
 
 export interface CheckoutProps {
     checkoutId: string;
@@ -156,6 +157,10 @@ const Checkout = ({
         hasSelectedShippingOptions: state.hasSelectedShippingOptions,
     });
 
+    const [evoResultIndicator, setEvoResultIndicator] = useState<string | null>(null);
+    const [orderDetails, setOrderDetails] = useState<Record<string, string> | null>(null);
+    const checkout = useCheckout();
+    
     const navigateToStep = useCallback((type: CheckoutStepType, options?: { isDefault?: boolean }):void => {
         const step = find(stepsRef.current, { type });
 
@@ -490,6 +495,53 @@ const Checkout = ({
             handleConsignmentsUpdatedRef.current,
         );
 
+        // Track EVO Payment redirect
+        const trackEviPayment = async () => {
+
+            const timestampInMilliseconds = Date.now();
+            const checkoutData = checkout.checkoutState.data.getCheckout();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const resultIndicator = urlParams.get("resultIndicator");
+            // const sessionVersion = params.get("sessionVersion");
+            setEvoResultIndicator(resultIndicator);
+
+            if (resultIndicator && checkoutData) {
+                // checkout.checkoutService.loadOrder(checkoutData.id);
+                // checkout.checkoutService.finalizeOrderIfNeeded();
+                try {
+
+                    const params = `checkout_id=${checkoutData.id}&cart_total=${checkoutData.grandTotal}&time=${timestampInMilliseconds}`;
+
+                    // Verify payment and create order
+                    fetch(`https://payment.s4optik.mx/evo/verify_payment_and_create_bc_order.php?${params}`)
+                    .then((response) => response.json())
+                    .then((response) => {
+                        console.log('verify_payment_and_create_bc_order response: ');
+                        console.log(response);
+
+                        setOrderDetails(response);
+
+                        // checkout.checkoutService.loadCheckout().then(() => {
+                        //     checkout.checkoutService.finalizeOrderIfNeeded().then(() => {
+                        //             console.log('order-confirmation: ');
+                        //             window.location.assign('/order-confirmation');
+                        //     });
+                        // });
+                    });
+                } catch (error) {
+                    console.log('finalizeOrderIfNeeded error: ');
+                    console.log(error);
+
+                    // if (error.type !== 'order_finalization_not_required') {
+                    //     throw error;
+                    // }
+                }
+            }
+        }
+
+        trackEviPayment();
+
         const init = async () => {
             try {
                 const providers = data.getConfig()?.checkoutSettings?.remoteCheckoutProviders || [];
@@ -642,7 +694,12 @@ const Checkout = ({
                                 onWalletButtonClick={handleWalletButtonClick}
                             />
 
-                            <ol className="checkout-steps">
+                            {evoResultIndicator ? <div style={{marginTop: '30px'}}>
+                                { !orderDetails ? 
+                                <h2>Payment is processing please wait...</h2>
+                                : <h2>Thank you for placing order. Order id is: {orderDetails.id}. <a href='https://s4optik.mx/'>Continue Shopping</a></h2>}
+                            </div>
+                            : <ol className="checkout-steps">
                                 {stepsRef.current
                                     .filter((step) => step.isRequired)
                                     .map((step) =>
@@ -654,7 +711,7 @@ const Checkout = ({
                                             isBusy: isPending,
                                         }),
                                     )}
-                            </ol>
+                            </ol>}
                         </div>
                     </>
                 }
