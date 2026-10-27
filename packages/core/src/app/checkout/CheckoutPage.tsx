@@ -696,8 +696,11 @@ const Checkout = ({
 
                             {evoResultIndicator ? <div style={{marginTop: '30px'}}>
                                 { !orderDetails ? 
-                                <h2>Payment is processing please wait...</h2>
-                                : <h2>Thank you for placing order. Order id is: {orderDetails.id}. <a href='https://s4optik.mx/'>Continue Shopping</a></h2>}
+                                // <h2>Payment is processing please wait...</h2>
+                                    <h2>Su pago se está procesando, por favor espere…</h2>
+                                :
+                                    // Thank you for your order. Your order number is: x. Continue shopping.
+                                    <h2>Gracias por su pedido. Su número de orden es: {orderDetails.id}. <a href='https://s4optik.mx/'>Continuar comprando</a></h2>}
                             </div>
                             : <ol className="checkout-steps">
                                 {stepsRef.current

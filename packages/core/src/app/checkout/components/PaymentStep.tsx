@@ -26,6 +26,34 @@ const PaymentStep = ({
     onEdit,
     onExpanded,
 }: PaymentStepProps): ReactElement => {
+    return <CheckoutStep
+        {...step}
+        heading={<TranslatedString id="payment.payment_heading" />}
+        key={step.type}
+        onEdit={onEdit}
+        onExpanded={onExpanded}
+    >
+        <LazyContainer loadingSkeleton={<ChecklistSkeleton />}>
+            <PayWithEvo />
+            {/* <Payment
+                checkEmbeddedSupport={checkEmbeddedSupport}
+                errorLogger={errorLogger}
+                isEmbedded={isEmbedded()}
+                isUsingMultiShipping={
+                    cart && consignments ? isUsingMultiShipping(consignments, cart.lineItems) : false
+                }
+                onCartChangedError={onCartChangedError}
+                onFinalize={onFinalize}
+                onReady={onReady}
+                onSubmit={onSubmit}
+                onSubmitError={onSubmitError}
+                onUnhandledError={onUnhandledError}
+            /> */}
+        </LazyContainer>
+    </CheckoutStep>
+}
+
+const PayWithEvo = () => {
     const [evoSessionId, setEvoSessionId] = useState(null);
     const checkout = useCheckout();
 
@@ -35,6 +63,9 @@ const PaymentStep = ({
         const checkoutData = checkout.checkoutState.data.getCheckout();
         
         if (checkoutData) {
+
+            console.log('checkoutData: ');
+            console.log(checkoutData);
 
             const params = `checkout_id=${checkoutData.id}&cart_total=${checkoutData.grandTotal}&time=${timestampInMilliseconds}`;
 
@@ -61,33 +92,11 @@ const PaymentStep = ({
         }
         window.location.href = 'https://evopaymentsmexico.gateway.mastercard.com/checkout/pay/'+evoSessionId+'?checkoutVersion=1.0.0'
     }
-    return <CheckoutStep
-        {...step}
-        heading={<TranslatedString id="payment.payment_heading" />}
-        key={step.type}
-        onEdit={onEdit}
-        onExpanded={onExpanded}
-    >
-        {/* <h2>This is payment step</h2> */}
-        <LazyContainer loadingSkeleton={<ChecklistSkeleton />}>
-            <div><input style={{ marginTop: '20px' }} type="button" value="Pay with EVO" onClick={openEvoPaymentPage} /></div>
-            {/* <Payment
-                checkEmbeddedSupport={checkEmbeddedSupport}
-                errorLogger={errorLogger}
-                isEmbedded={isEmbedded()}
-                isUsingMultiShipping={
-                    cart && consignments ? isUsingMultiShipping(consignments, cart.lineItems) : false
-                }
-                onCartChangedError={onCartChangedError}
-                onFinalize={onFinalize}
-                onReady={onReady}
-                onSubmit={onSubmit}
-                onSubmitError={onSubmitError}
-                onUnhandledError={onUnhandledError}
-            /> */}
-            {/* <h2>This is lazy payment</h2> */}
-        </LazyContainer>
-    </CheckoutStep>
+    return (
+        <div>
+            <input style={{ marginTop: '20px' }} type="button" value="Pay with EVO" onClick={openEvoPaymentPage} />
+        </div>
+    )
 }
 
 export default PaymentStep;
